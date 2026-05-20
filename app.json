@@ -1,5 +1,9 @@
 {
   "expo": {
+    "scheme":"myapp",
+    "experiments": {
+      "typedRoutes": true
+    },
     "name": "avance-pia",
     "slug": "avance-pia",
     "version": "1.0.0",
@@ -28,10 +32,7 @@
     },
     "plugins": [
       "expo-router"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    ]
     
   }
 }

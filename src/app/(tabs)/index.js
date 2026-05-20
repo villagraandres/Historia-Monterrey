@@ -1,42 +1,71 @@
 import MapView, { Marker } from 'react-native-maps';
-import { StyleSheet, View, Text } from 'react-native';
-import mapStyle from '../../mapStyle.json'
+import { StyleSheet, View, Text, Modal, Button } from 'react-native';
+import {mapStyle} from '../../constants/mapStyle'
+import markers from '../../data/markers.json'
+import initialRegion from '../../data/initialRegion.json'
+import { useState, useRef } from 'react';
+import { Link } from 'expo-router';
+
 
 export default function Mapa() {
 
-  const markers = [{ 
-        coords: [25.664795997346236, -100.31165318508616],
-        id:'circulo-mercantil',
-        title: "Circulo Mercantil222",
-        description: "El Círculo Mercantil Mutualista de Monterrey fue constituido en 1901 y contaba con 38 socios.\nEl edificio actual fue diseñado por FIUSA y su construcción dirigida por Juan Garza Lafón, inaugurándose en septiembre de 1933. Ocupa parte del terreno de la antigua iglesia y convento de San Francisco que cerraban la calle de Zaragoza al sur y que fueron destruidos en 1914",
-        icon:'genericS'   
-  }]
+  const [modal, SetModal] = useState(false)
+  const [selectedMarker, setMarker] = useState({})
+
+  const showModal = (marker) => {
+    SetModal(true)
+    setMarker(marker)
+  }
 
   return (
     <View style={styles.container}>
       <MapView style={styles.map} customMapStyle={mapStyle}   
-        initialRegion={{
-          latitude: 25.67,
-          longitude: -100.31,
-          latitudeDelta: 0.22,
-          longitudeDelta: 0.22,
-        }}>
+        initialRegion={initialRegion}>
           {markers.map((marker) => (
-            <Marker key={marker.id} coordinate={{latitude: marker.coords[0], longitude: marker.coords[1]}} title ={marker.title} description={marker.description}/>
+            <Marker key={marker.id} coordinate={{latitude: marker.coords[0], longitude: marker.coords[1]}} title={marker.title} description={marker.description} onPress={(() =>showModal(marker))}/>
             )
           )}
-
       </MapView>
+      {modal && 
+      <Modal animationType='fade' visible={true} transparent={true} onRequestClose={()  => SetModal(false)}>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={{textAlign: 'center'}}>{selectedMarker.title}</Text>
+            <Text style={{textAlign: 'center'}}>{selectedMarker.description}</Text>
+            <Link href="/articulos" style={{textDecorationLine: 'underline'}}>Leer mas</Link>
+            <Button title='Volver al mapa' onPress={() => SetModal(false)}></Button>  
+          </View>
+        </View>
+        </Modal>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  map: { 
+    width: '100%', 
+    height: '100%' 
+  },
+  centeredView: {
     flex: 1,
+    justifyContent: 'center',
+    alignitems: 'center'
   },
-  map: {
-    width: '100%',
-    height: '100%',
+    modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
+
 });
