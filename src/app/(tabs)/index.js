@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, Modal, Image, Pressable, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Modal, Pressable, ScrollView, Platform } from 'react-native';
 import { useState } from 'react';
 import { Link } from 'expo-router';
 import MapaView from '../../components/MapView'; // Expo elige .native.js o .web.js solo
@@ -8,6 +8,7 @@ import { Image as ExpoImage } from 'expo-image';
 export default function Mapa() {
   const [modal, setModal] = useState(false);
   const [selectedMarker, setMarker] = useState(null);
+  const [mapMode, setMapMode] = useState(Platform.OS === 'web' ? 'standard' : 'satellite');
 
   const showModal = (marker) => {
     setModal(true);
@@ -18,12 +19,30 @@ export default function Mapa() {
 
   return (
     <View style={styles.container}>
-      <MapaView onMarkerPress={showModal} />
+      <MapaView onMarkerPress={showModal} mapMode={mapMode} />
+
+      <View style={[styles.mapControls, Platform.OS === 'web' && styles.mapControlsWeb]} pointerEvents="box-none">
+        <View style={styles.mapHeader}>
+          <Pressable
+            style={[styles.mapToggleButton, mapMode === 'satellite' && styles.mapToggleButtonActive]}
+            onPress={() => setMapMode('satellite')}
+          >
+            <Text style={[styles.mapToggleText, mapMode === 'satellite' && styles.mapToggleTextActive]}>Satélite</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.mapToggleButton, mapMode === 'standard' && styles.mapToggleButtonActive]}
+            onPress={() => setMapMode('standard')}
+          >
+            <Text style={[styles.mapToggleText, mapMode === 'standard' && styles.mapToggleTextActive]}>Normal</Text>
+          </Pressable>
+        </View>
+      </View>
 
       {modal && (
         <Modal animationType="fade" visible={true} transparent={true} onRequestClose={() => setModal(false)}>
-          <Pressable style={styles.overlay} onPress={() => setModal(false)}>
-            <View style={styles.modalCard} onStartShouldSetResponder={() => true}>
+          <View style={styles.overlay}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setModal(false)} />
+            <View style={styles.modalCard}>
               {markerImage ? <ExpoImage source={markerImage} style={styles.heroImage} contentFit="cover" transition={150} /> : null}
 
               <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -46,7 +65,7 @@ export default function Mapa() {
                 </Pressable>
               </ScrollView>
             </View>
-          </Pressable>
+          </View>
         </Modal>
       )}
     </View>
@@ -57,6 +76,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f4efe7',
+  },
+  mapControls: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 40,
+    elevation: 40,
+  },
+  mapControlsWeb: {
+    left: 'auto',
+    top: 'auto',
+    right: 12,
+    bottom: 92,
+    width: 156,
+    height: 56,
+  },
+  mapHeader: {
+    flexDirection: 'row',
+    gap: 10,
+    ...(Platform.OS === 'web'
+      ? {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          elevation: 50,
+        }
+      : {
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          right: 12,
+          zIndex: 50,
+          elevation: 50,
+        }),
+  },
+  mapToggleButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 999,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(31, 41, 55, 0.12)',
+  },
+  mapToggleButtonActive: {
+    backgroundColor: '#1f2937',
+    borderColor: '#1f2937',
+  },
+  mapToggleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  mapToggleTextActive: {
+    color: '#fffaf2',
   },
   overlay: {
     flex: 1,
