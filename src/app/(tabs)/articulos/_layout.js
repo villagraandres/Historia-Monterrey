@@ -1,0 +1,11 @@
+import { Stack } from 'expo-router';
+
+
+export const unstable_settings = {
+  initialRouteName: 'main',
+};
+
+
+export default function FeedLayout() {
+  return <Stack />;
+}

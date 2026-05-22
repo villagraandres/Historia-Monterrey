@@ -15,7 +15,8 @@ export default function Mapa() {
     setMarker(marker);
   };
 
-  const markerImage = selectedMarker ? getMarkerImageSource(selectedMarker.id) : null;
+  const markerImage = selectedMarker ? getMarkerImageSource(selectedMarker.id) : null
+
 
   return (
     <View style={styles.container}>
@@ -54,7 +55,7 @@ export default function Mapa() {
 
                 {selectedMarker?.biblio ? <Text style={styles.source}>Fuente: {selectedMarker.biblio}</Text> : null}
 
-                <Link href="/articulos" asChild>
+                <Link href={{pathname: `(tabs)/articulos/[id]`, params: {info: selectedMarker.id}} } asChild>
                   <Pressable style={styles.articleButton}>
                     <Text style={styles.articleButtonText}>Leer más</Text>
                   </Pressable>
