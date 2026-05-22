@@ -1,71 +1,144 @@
-import MapView, { Marker } from 'react-native-maps';
-import { StyleSheet, View, Text, Modal, Button } from 'react-native';
-import {mapStyle} from '../../constants/mapStyle'
-import markers from '../../data/markers.json'
-import initialRegion from '../../data/initialRegion.json'
-import { useState, useRef } from 'react';
+import { StyleSheet, View, Text, Modal, Image, Pressable, ScrollView } from 'react-native';
+import { useState } from 'react';
 import { Link } from 'expo-router';
-
+import MapaView from '../../components/MapView'; // Expo elige .native.js o .web.js solo
+import { getMarkerImageSource } from '../../constants/markerImages';
+import { Image as ExpoImage } from 'expo-image';
 
 export default function Mapa() {
-
-  const [modal, SetModal] = useState(false)
-  const [selectedMarker, setMarker] = useState({})
+  const [modal, setModal] = useState(false);
+  const [selectedMarker, setMarker] = useState(null);
 
   const showModal = (marker) => {
-    SetModal(true)
-    setMarker(marker)
-  }
+    setModal(true);
+    setMarker(marker);
+  };
+
+  const markerImage = selectedMarker ? getMarkerImageSource(selectedMarker.id) : null;
 
   return (
     <View style={styles.container}>
-      <MapView style={styles.map} customMapStyle={mapStyle}   
-        initialRegion={initialRegion}>
-          {markers.map((marker) => (
-            <Marker key={marker.id} coordinate={{latitude: marker.coords[0], longitude: marker.coords[1]}} title={marker.title} description={marker.description} onPress={(() =>showModal(marker))}/>
-            )
-          )}
-      </MapView>
-      {modal && 
-      <Modal animationType='fade' visible={true} transparent={true} onRequestClose={()  => SetModal(false)}>
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={{textAlign: 'center'}}>{selectedMarker.title}</Text>
-            <Text style={{textAlign: 'center'}}>{selectedMarker.description}</Text>
-            <Link href="/articulos" style={{textDecorationLine: 'underline'}}>Leer mas</Link>
-            <Button title='Volver al mapa' onPress={() => SetModal(false)}></Button>  
-          </View>
-        </View>
-        </Modal>}
+      <MapaView onMarkerPress={showModal} />
+
+      {modal && (
+        <Modal animationType="fade" visible={true} transparent={true} onRequestClose={() => setModal(false)}>
+          <Pressable style={styles.overlay} onPress={() => setModal(false)}>
+            <View style={styles.modalCard} onStartShouldSetResponder={() => true}>
+              {markerImage ? <ExpoImage source={markerImage} style={styles.heroImage} contentFit="cover" transition={150} /> : null}
+
+              <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                <Text style={styles.kicker}>Sitio histórico</Text>
+                <Text style={styles.title}>{selectedMarker?.title ?? 'Sin título'}</Text>
+                <Text style={styles.description}>
+                  {selectedMarker?.description?.trim() || 'No hay descripción disponible para este marcador.'}
+                </Text>
+
+                {selectedMarker?.biblio ? <Text style={styles.source}>Fuente: {selectedMarker.biblio}</Text> : null}
+
+                <Link href="/articulos" asChild>
+                  <Pressable style={styles.articleButton}>
+                    <Text style={styles.articleButtonText}>Leer más</Text>
+                  </Pressable>
+                </Link>
+
+                <Pressable style={styles.closeButton} onPress={() => setModal(false)}>
+                  <Text style={styles.closeButtonText}>Volver al mapa</Text>
+                </Pressable>
+              </ScrollView>
+            </View>
+          </Pressable>
+        </Modal>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { 
-    width: '100%', 
-    height: '100%' 
+  container: {
+    flex: 1,
+    backgroundColor: '#f4efe7',
   },
-  centeredView: {
+  overlay: {
     flex: 1,
     justifyContent: 'center',
-    alignitems: 'center'
-  },
-    modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    padding: 20,
+    backgroundColor: 'rgba(17, 24, 39, 0.58)',
   },
-
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: '#fffaf2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  heroImage: {
+    width: '100%',
+    height: 220,
+    backgroundColor: '#d6d3d1',
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 22,
+    flexGrow: 1,
+  },
+  kicker: {
+    fontSize: 12,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: '#8b5e34',
+    marginBottom: 8,
+    fontWeight: '700',
+  },
+  title: {
+    fontSize: 24,
+    lineHeight: 30,
+    color: '#111827',
+    fontWeight: '800',
+  },
+  description: {
+    marginTop: 12,
+    fontSize: 15,
+    lineHeight: 23,
+    color: '#374151',
+  },
+  source: {
+    marginTop: 12,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#6b7280',
+    fontStyle: 'italic',
+  },
+  articleButton: {
+    marginTop: 18,
+    backgroundColor: '#1f2937',
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  articleButtonText: {
+    color: '#fffaf2',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  closeButton: {
+    marginTop: 12,
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d6d3d1',
+    backgroundColor: '#fffdf8',
+  },
+  closeButtonText: {
+    color: '#374151',
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });
