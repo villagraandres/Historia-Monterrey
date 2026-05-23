@@ -31,6 +31,12 @@
       "bundler": "metro"
     },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Esta app necesita tu ubicación para mostrarte en el mapa."
+        }
+      ],
       "expo-router"
     ]
     
