@@ -6,16 +6,81 @@ import MapaView from '../../components/MapView'; // Expo elige .native.js o .web
 import markers from '../../data/markers';
 import { getMarkerImageSource } from '../../constants/markerImages';
 import { Image as ExpoImage } from 'expo-image';
+import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Mapa() {
   const [modal, setModal] = useState(false);
   const [selectedMarker, setMarker] = useState(null);
   const params = useLocalSearchParams();
   const [mapMode, setMapMode] = useState(Platform.OS === 'web' ? 'standard' : 'satellite');
+  const [ubicacionActiva, setUbicacion] = useState(false)
+  const [currentPosition, setCurrentPosition] = useState(null);
+  const [markerCercano, setMarkerCercano] = useState(false);
+  const [coleccionablesGuardados, setColeccionablesGuardados] = useState([]);
+
+  const cargarColeccionablesGuardados = async () => {
+    try {
+      const existing = await AsyncStorage.getItem("coleccionables");
+      const coleccionables = existing ? JSON.parse(existing) : [];
+      setColeccionablesGuardados(Array.isArray(coleccionables) ? coleccionables : []);
+      return Array.isArray(coleccionables) ? coleccionables : [];
+    } catch (error) {
+      console.error('Error al cargar coleccionables guardados:', error);
+      setColeccionablesGuardados([]);
+      return [];
+    }
+  };
+
+  const agregarColeccionable = async (markerId) => {
+    try {
+      const existing = await cargarColeccionablesGuardados();
+      let coleccionables = Array.isArray(existing) ? [...existing] : [];
+
+      if (!coleccionables.includes(markerId)) {
+        coleccionables.push(markerId);
+        await AsyncStorage.setItem("coleccionables", JSON.stringify(coleccionables));
+        setColeccionablesGuardados(coleccionables);
+        console.log('Coleccionable agregado:', markerId);
+      } else {
+        console.log('El coleccionable ya existe:', markerId);
+      }
+    } catch (error) {
+      console.error('Error al guardar el coleccionable:', error);
+    }
+  }
+
+  const isCollected = (markerId) => coleccionablesGuardados.includes(markerId);
+
+  const getDistanceMeters = (from, to) => {
+    const toRad = (value) => (value * Math.PI) / 180;
+    const R = 6371000; // radio de la Tierra en metros
+    const dLat = toRad(to.latitude - from.latitude);
+    const dLon = toRad(to.longitude - from.longitude);
+    const lat1 = toRad(from.latitude);
+    const lat2 = toRad(to.latitude);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
 
   const showModal = (marker) => {
-    setModal(true);
     setMarker(marker);
+    if (ubicacionActiva && currentPosition) {
+      const distance = getDistanceMeters(
+        { latitude: currentPosition.latitude, longitude: currentPosition.longitude },
+        { latitude: marker.coords[0], longitude: marker.coords[1] }
+      );
+      console.log(`Distancia al marcador ${marker.id}: ${distance.toFixed(1)} m`);
+      setMarkerCercano(distance <= 400);
+    } else {
+      setMarkerCercano(false);
+    }
+    setModal(true);
   };
 
   useEffect(() => {
@@ -28,12 +93,44 @@ export default function Mapa() {
     }
   }, [params?.info]);
 
+  useEffect(() => {
+    cargarColeccionablesGuardados();
+  }, []);
+
   const markerImage = selectedMarker ? getMarkerImageSource(selectedMarker.id) : null
 
 
+  const toggleUbicacionAsync = async () => {
+    if (!ubicacionActiva) {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('Location permission status:', status);
+
+        if (status !== 'granted') {
+          setUbicacion(false);
+          setCurrentPosition(null);
+          return;
+        }
+
+        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        console.log('Ubicación actual:', position.coords);
+        setCurrentPosition(position.coords);
+        setUbicacion(true);
+      } catch (err) {
+        console.warn('Error al obtener la ubicación:', err);
+        setUbicacion(false);
+        setCurrentPosition(null);
+      }
+    } else {
+      setUbicacion(false);
+      setCurrentPosition(null);
+      setMarkerCercano(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <MapaView onMarkerPress={showModal} mapMode={mapMode} />
+      <MapaView onMarkerPress={showModal} mapMode={mapMode} hasLocationPermission={ubicacionActiva} />
 
       <View style={[styles.mapControls, Platform.OS === 'web' && styles.mapControlsWeb]} pointerEvents="box-none">
         <View style={styles.mapHeader}>
@@ -48,6 +145,9 @@ export default function Mapa() {
             onPress={() => setMapMode('standard')}
           >
             <Text style={[styles.mapToggleText, mapMode === 'standard' && styles.mapToggleTextActive]}>Normal</Text>
+          </Pressable>
+          <Pressable style={[styles.mapToggleButton, !ubicacionActiva && styles.mapToggleButtonActive]} onPress={toggleUbicacionAsync}>
+            <Text style={[styles.mapToggleText, !ubicacionActiva && styles.mapToggleTextActive]}>Ubicación</Text>
           </Pressable>
         </View>
       </View>
@@ -67,6 +167,15 @@ export default function Mapa() {
                 </Text>
 
                 {selectedMarker?.biblio ? <Text style={styles.source}>Fuente: {selectedMarker.biblio}</Text> : null}
+
+                {(markerCercano && selectedMarker.collection && !isCollected(selectedMarker.id)) && (
+                  <Pressable
+                    style={styles.collectionButton}
+                    onPress={() => agregarColeccionable(selectedMarker.id)}
+                  >
+                    <Text style={styles.collectionButtonText}>Obtener coleccionable</Text>
+                  </Pressable>
+                )}
 
                 <Link href={{pathname: `(tabs)/articulos/[id]`, params: {info: selectedMarker.id}} } asChild>
                   <Pressable style={styles.articleButton}>
@@ -211,6 +320,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   articleButtonText: {
+    color: '#fffaf2',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  collectionButton: {
+    marginTop: 18,
+    backgroundColor: '#047857',
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  collectionButtonText: {
     color: '#fffaf2',
     fontSize: 15,
     fontWeight: '700',

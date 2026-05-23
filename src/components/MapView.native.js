@@ -7,60 +7,60 @@ import markers from '../data/markers.json';
 import initialRegion from '../data/initialRegion.json';
 import { getMarkerIconSource } from '../constants/markerIcons';
 
-export default function MapaView({ onMarkerPress, mapMode = 'satellite' }) {
+export default function MapaView({ onMarkerPress, mapMode = 'satellite' , hasLocationPermission}) {
   const mapRef = useRef(null);
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  //const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
-  useEffect(() => {
-    let isActive = true;
+  // useEffect(() => {
+  //   let isActive = true;
 
-    const loadUserLocation = async () => {
-      if (Platform.OS !== 'android') {
-        return;
-      }
+  //   const loadUserLocation = async () => {
+  //     if (Platform.OS !== 'android') {
+  //       return;
+  //     }
 
-      const { status } = await Location.requestForegroundPermissionsAsync();
+  //     const { status } = await Location.requestForegroundPermissionsAsync();
 
-      if (!isActive) {
-        return;
-      }
+  //     if (!isActive) {
+  //       return;
+  //     }
 
-      const granted = status === 'granted';
-      setHasLocationPermission(granted);
+  //     const granted = status === 'granted';
+  //     setHasLocationPermission(granted);
 
-      if (!granted) {
-        return;
-      }
+  //     if (!granted) {
+  //       return;
+  //     }
 
-      const position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+  //     const position = await Location.getCurrentPositionAsync({
+  //       accuracy: Location.Accuracy.Balanced,
+  //     });
 
-      if (!isActive || !mapRef.current) {
-        return;
-      }
+  //     if (!isActive || !mapRef.current) {
+  //       return;
+  //     }
 
-      mapRef.current.animateToRegion(
-        {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          latitudeDelta: initialRegion.latitudeDelta,
-          longitudeDelta: initialRegion.longitudeDelta,
-        },
-        900
-      );
-    };
+  //     mapRef.current.animateToRegion(
+  //       {
+  //         latitude: position.coords.latitude,
+  //         longitude: position.coords.longitude,
+  //         latitudeDelta: initialRegion.latitudeDelta,
+  //         longitudeDelta: initialRegion.longitudeDelta,
+  //       },
+  //       900
+  //     );
+  //   };
 
-    loadUserLocation().catch(() => {
-      if (isActive) {
-        setHasLocationPermission(false);
-      }
-    });
+  //   loadUserLocation().catch(() => {
+  //     if (isActive) {
+  //       setHasLocationPermission(false);
+  //     }
+  //   });
 
-    return () => {
-      isActive = false;
-    };
-  }, []);
+  //   return () => {
+  //     isActive = false;
+  //   };
+  // }, []);
 
   return (
     <View style={styles.container}>

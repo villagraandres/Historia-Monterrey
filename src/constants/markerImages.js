@@ -272,8 +272,17 @@ const markerImageCarousels = {
   ],
 };
 
+const imagenesColeccionables = {
+  "obispadoPrincipal": require('../../assets/images/coleccionables/obispadoC.png'),
+  "prueba": require('../../assets/images/coleccionables/Vidaurri.png'),
+}
+
 export function getMarkerImageSource(markerId) {
   return markerImages[markerId] ?? markerImages.default;
+}
+
+export function getColeccionableImageSource(markerId) {
+  return imagenesColeccionables[markerId] ?? null;
 }
 
 export function getMarkerImages(markerId) {
