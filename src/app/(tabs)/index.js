@@ -1,19 +1,32 @@
 import { StyleSheet, View, Text, Modal, Pressable, ScrollView, Platform } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { Link } from 'expo-router';
 import MapaView from '../../components/MapView'; // Expo elige .native.js o .web.js solo
+import markers from '../../data/markers';
 import { getMarkerImageSource } from '../../constants/markerImages';
 import { Image as ExpoImage } from 'expo-image';
 
 export default function Mapa() {
   const [modal, setModal] = useState(false);
   const [selectedMarker, setMarker] = useState(null);
+  const params = useLocalSearchParams();
   const [mapMode, setMapMode] = useState(Platform.OS === 'web' ? 'standard' : 'satellite');
 
   const showModal = (marker) => {
     setModal(true);
     setMarker(marker);
   };
+
+  useEffect(() => {
+    // Si viene ?info=<id> en la URL, abrir el modal del marcador correspondiente
+    if (params?.info) {
+      const m = markers.find((x) => x.id === params.info);
+      if (m) {
+        showModal(m);
+      }
+    }
+  }, [params?.info]);
 
   const markerImage = selectedMarker ? getMarkerImageSource(selectedMarker.id) : null
 
